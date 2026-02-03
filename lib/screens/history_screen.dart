@@ -14,6 +14,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _db = DatabaseHelper.instance;
   List<Map<String, dynamic>> _workouts = [];
+  Map<int, int> _exerciseCounts = {};
   bool _isLoading = true;
 
   @override
@@ -28,9 +29,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     final workouts = await _db.getWorkouts();
+    final Map<int, int> counts = {};
+    
+    // Load exercise count for each workout
+    for (var workout in workouts) {
+      final details = await _db.getWorkoutDetails(workout['id']);
+      counts[workout['id']] = details.length;
+    }
     
     setState(() {
       _workouts = workouts;
+      _exerciseCounts = counts;
       _isLoading = false;
     });
   }
@@ -93,7 +102,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                     Text(
-                      '${details.length} exercises',
+                      '${details.length} ${details.length == 1 ? 'exercise' : 'exercises'}',
                       style: TextStyle(
                         color: AppTheme.lightText,
                         fontSize: 14,
@@ -104,72 +113,93 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: details.length,
-                  itemBuilder: (context, index) {
-                    final item = details[index];
-                    final exercise = item['exercise'] as Map<String, dynamic>;
-                    final sets = item['sets'] as List<Map<String, dynamic>>;
+                child: details.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.fitness_center,
+                              size: 64,
+                              color: AppTheme.lightText,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No exercises logged',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppTheme.lightText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: details.length,
+                        itemBuilder: (context, index) {
+                          final item = details[index];
+                          final exercise = item['exercise'] as Map<String, dynamic>;
+                          final sets = item['sets'] as List<Map<String, dynamic>>;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ExerciseDetailScreen(
-                                exerciseName: exercise['name'],
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ExerciseDetailScreen(
+                                      exerciseName: exercise['name'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            exercise['name'],
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          color: AppTheme.lightText,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...sets.map((set) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 2),
+                                        child: Text(
+                                          'Set ${set['set_number']}: ${set['reps']} reps × ${set['weight']} kg',
+                                          style: TextStyle(
+                                            color: AppTheme.lightText,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      exercise['name'],
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: AppTheme.lightText,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ...sets.map((set) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                  child: Text(
-                                    'Set ${set['set_number']}: ${set['reps']} reps × ${set['weight']} kg',
-                                    style: TextStyle(
-                                      color: AppTheme.lightText,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ),
                       ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
@@ -226,6 +256,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   itemCount: _workouts.length,
                   itemBuilder: (context, index) {
                     final workout = _workouts[index];
+                    final exerciseCount = _exerciseCounts[workout['id']] ?? 0;
+                    
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
@@ -239,27 +271,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _formatDate(workout['date']),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatDate(workout['date']),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat('h:mm a').format(
-                                      DateTime.parse(workout['created_at']),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          DateFormat('h:mm a').format(
+                                            DateTime.parse(workout['created_at']),
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.lightText,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '•',
+                                          style: TextStyle(
+                                            color: AppTheme.lightText,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          Icons.fitness_center,
+                                          size: 14,
+                                          color: AppTheme.lightText,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '$exerciseCount ${exerciseCount == 1 ? 'exercise' : 'exercises'}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppTheme.lightText,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: AppTheme.lightText,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               Icon(
                                 Icons.chevron_right,
