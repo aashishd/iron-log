@@ -30,22 +30,38 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const HistoryScreen(),
-  ];
+  final GlobalKey<NavigatorState> _historyKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          const HomeScreen(),
+          Navigator(
+            key: _historyKey,
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(
+                builder: (context) => const HistoryScreen(),
+              );
+            },
+          ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
           });
+          // Refresh history screen when navigating to it
+          if (index == 1) {
+            // Trigger a rebuild of HistoryScreen
+            _historyKey.currentState?.pushReplacement(
+              MaterialPageRoute(builder: (context) => const HistoryScreen()),
+            );
+          }
         },
         destinations: const [
           NavigationDestination(
