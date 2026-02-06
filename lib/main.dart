@@ -30,11 +30,26 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final GlobalKey _historyKey = GlobalKey();
+  late final List<Widget> _screens;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const HistoryScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const HomeScreen(),
+      HistoryScreen(key: _historyKey),
+    ];
+  }
+
+  void _onTabSelected(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    if (index == 1) {
+      (_historyKey.currentState as dynamic)?.loadWorkouts();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +57,7 @@ class _MainScreenState extends State<MainScreen> {
       body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onDestinationSelected: _onTabSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.fitness_center),
