@@ -7,10 +7,7 @@ import '../theme.dart';
 class ExerciseDetailScreen extends StatefulWidget {
   final String exerciseName;
 
-  const ExerciseDetailScreen({
-    super.key,
-    required this.exerciseName,
-  });
+  const ExerciseDetailScreen({super.key, required this.exerciseName});
 
   @override
   State<ExerciseDetailScreen> createState() => _ExerciseDetailScreenState();
@@ -34,7 +31,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     });
 
     final history = await _db.getExerciseHistory(widget.exerciseName);
-    
+
     setState(() {
       _history = history;
       _isLoading = false;
@@ -45,32 +42,29 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     if (_history.isEmpty) return [];
 
     List<FlSpot> spots = [];
-    
+
     for (int i = 0; i < _history.length; i++) {
       final entry = _history[i];
       final sets = entry['sets'] as List<Map<String, dynamic>>;
-      
+
       if (sets.isEmpty) continue;
 
       double weight;
       if (_showAverage) {
         // Calculate average weight
         final total = sets.fold<double>(
-          0, 
-          (sum, set) => sum + (set['weight'] as num).toDouble()
+          0,
+          (sum, set) => sum + (set['weight'] as num).toDouble(),
         );
         weight = total / sets.length;
       } else {
         // Get max weight
-        weight = sets.fold<double>(
-          0,
-          (max, set) {
-            final w = (set['weight'] as num).toDouble();
-            return w > max ? w : max;
-          },
-        );
+        weight = sets.fold<double>(0, (max, set) {
+          final w = (set['weight'] as num).toDouble();
+          return w > max ? w : max;
+        });
       }
-      
+
       spots.add(FlSpot(i.toDouble(), weight));
     }
 
@@ -79,7 +73,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   Widget _buildChart() {
     final spots = _getChartData();
-    
+
     if (spots.isEmpty) {
       return Center(
         child: Text(
@@ -89,9 +83,16 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       );
     }
 
-    final maxY = spots.fold<double>(0, (max, spot) => spot.y > max ? spot.y : max);
-    final minY = spots.fold<double>(double.infinity, (min, spot) => spot.y < min ? spot.y : min);
-    
+    final maxY = spots.fold<double>(
+      0,
+      (max, spot) => spot.y > max ? spot.y : max,
+    );
+    final minY = spots.fold<double>(
+      double.infinity,
+      (min, spot) => spot.y < min ? spot.y : min,
+    );
+    final interval = maxY - minY > 0 ? (maxY - minY) / 4 : 10.0;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: LineChart(
@@ -99,7 +100,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: (maxY - minY) / 4,
+            horizontalInterval: interval,
             getDrawingHorizontalLine: (value) {
               return FlLine(
                 color: AppTheme.lightText.withValues(alpha: 0.1),
@@ -115,10 +116,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 getTitlesWidget: (value, meta) {
                   return Text(
                     '${value.toInt()}',
-                    style: TextStyle(
-                      color: AppTheme.lightText,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppTheme.lightText, fontSize: 12),
                   );
                 },
               ),
@@ -135,17 +133,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 reservedSize: 30,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= _history.length) return const Text('');
-                  
+                  if (index < 0 || index >= _history.length)
+                    return const Text('');
+
                   final date = DateTime.parse(_history[index]['date']);
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       DateFormat('M/d').format(date),
-                      style: TextStyle(
-                        color: AppTheme.lightText,
-                        fontSize: 10,
-                      ),
+                      style: TextStyle(color: AppTheme.lightText, fontSize: 10),
                     ),
                   );
                 },
@@ -155,14 +151,22 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           borderData: FlBorderData(
             show: true,
             border: Border(
-              left: BorderSide(color: AppTheme.lightText.withValues(alpha: 0.2)),
-              bottom: BorderSide(color: AppTheme.lightText.withValues(alpha: 0.2)),
+              left: BorderSide(
+                color: AppTheme.lightText.withValues(alpha: 0.2),
+              ),
+              bottom: BorderSide(
+                color: AppTheme.lightText.withValues(alpha: 0.2),
+              ),
             ),
           ),
           minX: 0,
           maxX: (spots.length - 1).toDouble(),
-          minY: (minY * 0.9).floorToDouble(),
-          maxY: (maxY * 1.1).ceilToDouble(),
+          minY: maxY == minY
+              ? (minY * 0.9).floorToDouble()
+              : (minY * 0.9).floorToDouble(),
+          maxY: maxY == minY
+              ? (maxY * 1.1).ceilToDouble()
+              : (maxY * 1.1).ceilToDouble(),
           lineBarsData: [
             LineChartBarData(
               spots: spots,
@@ -212,9 +216,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.exerciseName),
-      ),
+      appBar: AppBar(title: Text(widget.exerciseName)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -250,15 +252,12 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Chart
-                  SizedBox(
-                    height: 250,
-                    child: _buildChart(),
-                  ),
-                  
+                  SizedBox(height: 250, child: _buildChart()),
+
                   const SizedBox(height: 16),
-                  
+
                   // History list
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -270,15 +269,18 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   ..._history.map((entry) {
                     final date = DateTime.parse(entry['date']);
                     final sets = entry['sets'] as List<Map<String, dynamic>>;
-                    
+
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -294,7 +296,9 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                             const SizedBox(height: 8),
                             ...sets.map((set) {
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
                                 child: Text(
                                   'Set ${set['set_number']}: ${set['reps']} reps × ${set['weight']} kg',
                                   style: TextStyle(
@@ -309,7 +313,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       ),
                     );
                   }),
-                  
+
                   const SizedBox(height: 16),
                 ],
               ),
