@@ -204,72 +204,76 @@ class DatabaseHelper {
   }
 
   Future<void> generateDummyData() async {
-    final workouts = await getWorkouts();
-    if (workouts.isNotEmpty) return;
+    try {
+      final workouts = await getWorkouts();
+      if (workouts.isNotEmpty) return;
 
-    final exercises = [
-      'Bench Press',
-      'Squat',
-      'Deadlift',
-      'Overhead Press',
-      'Barbell Row',
-      'Pull-ups',
-      'Dips',
-      'Leg Press',
-      'Lat Pulldown',
-      'Bicep Curls',
-      'Tricep Extensions',
-      'Leg Curls',
-      'Calf Raises',
-    ];
+      final exercises = [
+        'Bench Press',
+        'Squat',
+        'Deadlift',
+        'Overhead Press',
+        'Barbell Row',
+        'Pull-ups',
+        'Dips',
+        'Leg Press',
+        'Lat Pulldown',
+        'Bicep Curls',
+        'Tricep Extensions',
+        'Leg Curls',
+        'Calf Raises',
+      ];
 
-    final now = DateTime.now();
-    final random = DateTime(now.year, now.month, now.day);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
 
-    for (int i = 6; i >= 0; i--) {
-      final workoutDate = random.subtract(Duration(days: i));
-      final formattedDate = DateFormat('yyyy-MM-dd').format(workoutDate);
-      final createdAt = DateTime(
-        workoutDate.year,
-        workoutDate.month,
-        workoutDate.day,
-        9 + (i % 8),
-        (i * 13) % 59,
-      ).toIso8601String();
+      for (int i = 6; i >= 0; i--) {
+        final workoutDate = today.subtract(Duration(days: i));
+        final formattedDate = DateFormat('yyyy-MM-dd').format(workoutDate);
+        final createdAt = DateTime(
+          workoutDate.year,
+          workoutDate.month,
+          workoutDate.day,
+          9 + (i % 8),
+          (i * 13) % 59,
+        ).toIso8601String();
 
-      if (i > 3) continue;
+        if (i > 3) continue;
 
-      final workoutId = await createWorkout({
-        'date': formattedDate,
-        'created_at': createdAt,
-      });
-
-      final exercisesCount = 3 + (i % 4);
-      final shuffledExercises = (exercises..shuffle())
-          .take(exercisesCount)
-          .toList();
-
-      for (final exerciseName in shuffledExercises) {
-        final exerciseId = await createExercise({
-          'workout_id': workoutId,
-          'name': exerciseName,
+        final workoutId = await createWorkout({
+          'date': formattedDate,
+          'created_at': createdAt,
         });
 
-        final setsCount = 3 + (i % 3);
-        for (int setNum = 0; setNum < setsCount; setNum++) {
-          final baseWeight = _getBaseWeight(exerciseName);
-          final weightVariation = (i * 2.5) + (setNum * 2.5);
-          final weight = baseWeight + weightVariation;
-          final reps = 8 + (setNum * 2) + (i % 3);
+        final exercisesCount = 3 + (i % 4);
+        final shuffledExercises = (exercises..shuffle())
+            .take(exercisesCount)
+            .toList();
 
-          await createSet({
-            'exercise_id': exerciseId,
-            'reps': reps,
-            'weight': weight,
-            'set_number': setNum + 1,
+        for (final exerciseName in shuffledExercises) {
+          final exerciseId = await createExercise({
+            'workout_id': workoutId,
+            'name': exerciseName,
           });
+
+          final setsCount = 3 + (i % 3);
+          for (int setNum = 0; setNum < setsCount; setNum++) {
+            final baseWeight = _getBaseWeight(exerciseName);
+            final weightVariation = (i * 2.5) + (setNum * 2.5);
+            final weight = baseWeight + weightVariation;
+            final reps = 8 + (setNum * 2) + (i % 3);
+
+            await createSet({
+              'exercise_id': exerciseId,
+              'reps': reps,
+              'weight': weight,
+              'set_number': setNum + 1,
+            });
+          }
         }
       }
+    } catch (e) {
+      print('Error generating dummy data: $e');
     }
   }
 
