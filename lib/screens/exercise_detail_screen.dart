@@ -254,7 +254,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   ),
 
                   // Chart
-                  SizedBox(height: 250, child: _buildChart()),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints.tightFor(height: 250),
+                    child: _buildChart(),
+                  ),
 
                   const SizedBox(height: 16),
 
