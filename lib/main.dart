@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
+import 'database_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper.instance.generateDummyData();
   runApp(const IronLogApp());
 }
 
@@ -68,10 +71,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.fitness_center),
             label: 'Log Workout',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
+          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
         ],
       ),
     );
