@@ -19,10 +19,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadWorkouts();
+    loadWorkouts();
   }
 
-  Future<void> _loadWorkouts() async {
+  Future<void> loadWorkouts() async {
     setState(() {
       _isLoading = true;
     });
@@ -186,7 +186,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadWorkouts,
+            onPressed: loadWorkouts,
           ),
         ],
       ),
